@@ -11,16 +11,17 @@ const oauth2Client = new google.auth.OAuth2(
 );
 
 export async function GET(req: NextRequest) {
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://schedulr.vercel.app";
   try {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get("code");
-    const state = searchParams.get("state"); // JWT token
+    const state = searchParams.get("state");
 
     console.log("Code:", code);
     console.log("State (token):", state);
 
     if (!code || !state) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?google=error`);
+      return NextResponse.redirect(`${APP_URL}/dashboard?google=error`);
     }
 
     const { tokens } = await oauth2Client.getToken(code);
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
     console.log("Decoded:", decoded);
 
     if (!decoded) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?google=error`);
+      return NextResponse.redirect(`${APP_URL}/dashboard?google=error`);
     }
 
     await connectDB();
@@ -40,9 +41,9 @@ export async function GET(req: NextRequest) {
 
     console.log("Google token saved for user:", decoded.userId);
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?google=connected`);
+    return NextResponse.redirect(`${APP_URL}/dashboard?google=connected`);
   } catch (error) {
     console.error("Google callback error:", error);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?google=error`);
+    return NextResponse.redirect(`${APP_URL}/dashboard?google=error`);
   }
 }
