@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 export default function BookingPage() {
   const { username, slug } = useParams();
   const [event, setEvent] = useState<any>(null);
+  
   const [host, setHost] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [slots, setSlots] = useState<string[]>([]);
