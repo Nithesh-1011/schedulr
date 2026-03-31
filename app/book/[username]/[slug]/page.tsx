@@ -11,10 +11,10 @@ export default function BookingPage() {
   const [slots, setSlots] = useState<string[]>([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [form, setForm] = useState({ guestName: "", guestEmail: "", notes: "" });
+  const [emailError, setEmailError] = useState("");
   const [loading, setLoading] = useState(false);
   const [booked, setBooked] = useState(false);
 
-  // Fetch event details
   useEffect(() => {
     fetch(`/api/public/event?username=${username}&slug=${slug}`)
       .then((r) => r.json())
@@ -24,7 +24,6 @@ export default function BookingPage() {
       });
   }, [username, slug]);
 
-  // Fetch available slots when date changes
   useEffect(() => {
     if (!selectedDate || !event) return;
     fetch(`/api/availability?eventId=${event._id}&date=${selectedDate}`)
@@ -32,10 +31,19 @@ export default function BookingPage() {
       .then((d) => setSlots(d.available || []));
   }, [selectedDate, event]);
 
+  function validateEmail(email: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
   async function handleBook() {
     if (!selectedSlot || !form.guestName || !form.guestEmail) {
       return toast.error("Please fill all fields");
     }
+    if (!validateEmail(form.guestEmail)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    setEmailError("");
     setLoading(true);
     try {
       const [h, m] = selectedSlot.split(":").map(Number);
@@ -145,30 +153,60 @@ export default function BookingPage() {
           <div className="bg-white rounded-xl p-6 border mb-6">
             <h2 className="font-semibold text-gray-900 mb-4">Your Details</h2>
             <div className="space-y-4">
-              {[
-                { label: "Your Name", key: "guestName", type: "text" },
-                { label: "Your Email", key: "guestEmail", type: "email" },
-              ].map(({ label, key, type }) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                  <input
-                    type={type}
-                    required
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={form[key as keyof typeof form]}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  />
-                </div>
-              ))}
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="John Doe"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={form.guestName}
+                  onChange={(e) => setForm({ ...form, guestName: e.target.value })}
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Your Email</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="john@example.com"
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                    emailError
+                      ? "border-red-400 focus:ring-red-400"
+                      : "border-gray-300 focus:ring-blue-500"
+                  }`}
+                  value={form.guestEmail}
+                  onChange={(e) => {
+                    setForm({ ...form, guestEmail: e.target.value });
+                    if (emailError) setEmailError("");
+                  }}
+                  onBlur={() => {
+                    if (form.guestEmail && !validateEmail(form.guestEmail)) {
+                      setEmailError("Please enter a valid email address");
+                    }
+                  }}
+                />
+                {emailError && (
+                  <p className="text-red-500 text-xs mt-1">{emailError}</p>
+                )}
+              </div>
+
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
                 <textarea
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
+                  placeholder="Anything you'd like to share before the meeting..."
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 />
               </div>
+
               <button
                 onClick={handleBook}
                 disabled={loading}
